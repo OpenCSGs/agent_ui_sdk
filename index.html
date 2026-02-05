@@ -29,6 +29,7 @@
             <button
               class="icon-btn"
               id="clearButton"
+              data-ah-ref="clear"
               title="清空对话"
               aria-label="清空对话"
             >
@@ -54,6 +55,7 @@
         <div
           class="chat-messages"
           id="chatMessages"
+          data-ah-ref="messages"
         >
           <div class="welcome-message">
             <div class="welcome-card">
@@ -64,6 +66,7 @@
               <div
                 class="welcome-chips"
                 id="quickChips"
+                data-ah-ref="chips"
               >
                 <button
                   class="chip"
@@ -92,6 +95,7 @@
           <div class="input-wrap">
             <textarea
               id="chatInput"
+              data-ah-ref="input"
               placeholder="输入你的消息…（Enter 发送，Shift+Enter 换行）"
               rows="1"
             ></textarea>
@@ -99,6 +103,7 @@
               <button
                 class="icon-btn"
                 id="scrollToBottom"
+                data-ah-ref="scroll"
                 title="回到底部"
                 aria-label="回到底部"
               >
@@ -122,6 +127,7 @@
               <button
                 class="icon-btn"
                 id="uploadButton"
+                data-ah-ref="upload"
                 title="上传图片"
                 aria-label="上传图片"
               >
@@ -161,11 +167,13 @@
               <input
                 type="file"
                 id="fileInput"
+                data-ah-ref="file"
                 accept="image/*"
                 style="display: none"
               />
               <button
                 id="sendButton"
+                data-ah-ref="send"
                 class="send-btn"
               >
                 <span class="send-text">发送</span>
@@ -200,6 +208,7 @@
             <span
               class="status"
               id="connStatus"
+              data-ah-ref="status"
               >● 在线</span
             >
           </div>
@@ -208,6 +217,7 @@
     </div>
 
     <script src="/ui/sdk.js"></script>
+    <script src="/ui/renderer.js"></script>
     <script src="/ui/app.js"></script>
 
     <!-- 可选：一些轻量 UI 行为（不影响你现有 app.js 的消息逻辑） -->

@@ -1,14 +1,16 @@
-const chatMessages = document.getElementById('chatMessages')
-const chatInput = document.getElementById('chatInput')
-const sendButton = document.getElementById('sendButton')
+const chatMessages = document.querySelector('[data-ah-ref="messages"]') || document.getElementById('chatMessages')
+const chatInput = document.querySelector('[data-ah-ref="input"]') || document.getElementById('chatInput')
+const sendButton = document.querySelector('[data-ah-ref="send"]') || document.getElementById('sendButton')
 
 // 可选（如果你用了我上一条给的 HTML）：快捷按钮/清空/回到底部/状态
-const clearButton = document.getElementById('clearButton')
-const scrollToBottomBtn = document.getElementById('scrollToBottom')
-const connStatus = document.getElementById('connStatus')
-const quickChips = document.getElementById('quickChips')
-const uploadButton = document.getElementById('uploadButton')
-const fileInput = document.getElementById('fileInput')
+const clearButton = document.querySelector('[data-ah-ref="clear"]') || document.getElementById('clearButton')
+const scrollToBottomBtn = document.querySelector('[data-ah-ref="scroll"]') || document.getElementById('scrollToBottom')
+const connStatus = document.querySelector('[data-ah-ref="status"]') || document.getElementById('connStatus')
+const quickChips = document.querySelector('[data-ah-ref="chips"]') || document.getElementById('quickChips')
+const uploadButton = document.querySelector('[data-ah-ref="upload"]') || document.getElementById('uploadButton')
+const fileInput = document.querySelector('[data-ah-ref="file"]') || document.getElementById('fileInput')
+
+const renderer = new AgenticHub.DefaultRenderer({ root: chatMessages })
 const chatClient = new AgenticHub.ChatClient()
 
 let currentImageUrl = null // 当前上传的图片 URL
@@ -117,118 +119,9 @@ chatMessages.addEventListener('scroll', updateScrollButton)
 setTimeout(updateScrollButton, 200)
 
 /* ---------------------------
-   消息渲染：支持时间戳 + 代码块格式
+   消息渲染：由渲染器负责
 ---------------------------- */
-function escapeHtml(str) {
-  return str
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;')
-}
 
-// 非完整 Markdown，只做轻量代码格式：``` ``` 和 `inline` 和图片
-function renderRichText(text) {
-  const escaped = escapeHtml(text)
-
-  // 先处理 fenced code blocks
-  const parts = escaped.split(/```/g)
-  let html = ''
-  for (let i = 0; i < parts.length; i++) {
-    if (i % 2 === 0) {
-      // 普通文本：处理行内代码和图片
-      let withInline = parts[i].replace(/`([^`]+)`/g, '<code>$1</code>')
-      // 处理图片 markdown: ![alt](url)
-      withInline = withInline.replace(
-        /!\[([^\]]*)\]\(([^)]+)\)/g,
-        '<img src="$2" alt="$1" style="max-width: 100%; max-height: 400px; border-radius: 8px; margin: 8px 0;" />'
-      )
-      // 换行
-      html += withInline.replace(/\n/g, '<br/>')
-    } else {
-      // code block（可能第一行是语言标识，这里不特殊处理）
-      html += `<pre><code>${parts[i].replace(/^\n/, '')}</code></pre>`
-    }
-  }
-  return html
-}
-
-function addMessage(role, content, opts = {}) {
-  const { time = formatTime(), isStreaming = false } = opts
-
-  const messageDiv = document.createElement('div')
-  messageDiv.className = `message ${role}`
-
-  const avatar = document.createElement('div')
-  avatar.className = 'message-avatar'
-  avatar.textContent = role === 'user' ? '你' : 'AI'
-
-  const contentDiv = document.createElement('div')
-  contentDiv.className = 'message-content'
-
-  // 内容
-  if (isStreaming) {
-    contentDiv.textContent = content // 流式阶段用 textContent，避免频繁 innerHTML 导致闪烁
-  } else {
-    contentDiv.innerHTML = renderRichText(content)
-  }
-
-  // 时间戳（不改 CSS 也能显示；如果你想更好看我可以补一条 CSS）
-  const meta = document.createElement('div')
-  meta.className = 'message-meta'
-  meta.style.cssText =
-    'margin-top:6px;font-size:12px;opacity:.65;user-select:none;'
-  meta.textContent = time
-
-  contentDiv.appendChild(meta)
-
-  messageDiv.appendChild(avatar)
-  messageDiv.appendChild(contentDiv)
-
-  chatMessages.appendChild(messageDiv)
-
-  // 移除欢迎消息
-  const welcomeMessage = chatMessages.querySelector('.welcome-message')
-  if (welcomeMessage) welcomeMessage.remove()
-
-  scrollToBottom()
-  updateScrollButton()
-
-  return messageDiv
-}
-
-/* ---------------------------
-   打字指示器（保持你原有结构）
----------------------------- */
-function showTypingIndicator() {
-  const loadingId = 'loading-' + Date.now()
-  const messageDiv = document.createElement('div')
-  messageDiv.className = 'message assistant'
-  messageDiv.id = loadingId
-
-  const avatar = document.createElement('div')
-  avatar.className = 'message-avatar'
-  avatar.textContent = 'AI'
-
-  const contentDiv = document.createElement('div')
-  contentDiv.className = 'typing-indicator'
-  contentDiv.innerHTML = '<span></span><span></span><span></span>'
-
-  messageDiv.appendChild(avatar)
-  messageDiv.appendChild(contentDiv)
-
-  chatMessages.appendChild(messageDiv)
-  scrollToBottom()
-  updateScrollButton()
-
-  return loadingId
-}
-
-function removeTypingIndicator(loadingId) {
-  const loadingElement = document.getElementById(loadingId)
-  if (loadingElement) loadingElement.remove()
-}
 
 /* ---------------------------
    发送消息：增加 Abort、状态、流式渲染更顺
@@ -370,7 +263,6 @@ async function sendMessage() {
 
   // 如果上一次还在请求，先中止（防止并发把 UI 搞乱）
   if (abortController) abortController.abort()
-  abortController = new AbortController()
 
   // 构建用户消息内容（可能包含图片）
   let userContent = message
@@ -379,7 +271,7 @@ async function sendMessage() {
   }
 
   // 用户消息
-  addMessage('user', userContent, { time: formatTime() })
+  renderer.addMessage('user', userContent, { time: formatTime() })
 
   // 构建 files 参数
   let files = []
@@ -402,12 +294,13 @@ async function sendMessage() {
   conversationHistory.push({ role: 'user', content: message })
 
   // 打字指示
-  const loadingId = showTypingIndicator()
+  const loadingId = renderer.showTypingIndicator()
 
-  const assistantMessageDiv = addMessage('assistant', '', { time: formatTime(), isStreaming: true })
-  const contentDiv = assistantMessageDiv.querySelector('.message-content')
-  const meta = contentDiv.querySelector('.message-meta')
+  const assistantMessageDiv = renderer.addMessage('assistant', '', { time: formatTime(), isStreaming: true })
+  const contentDiv = assistantMessageDiv.querySelector('[data-ah="content"]') || assistantMessageDiv.querySelector('.message-content')
+  const meta = contentDiv.querySelector('[data-ah="meta"]') || contentDiv.querySelector('.message-meta')
   let fullResponse = ''
+  let typingRemoved = false
   const stream = chatClient.streamChat(
     {
       query: message,
@@ -416,6 +309,10 @@ async function sendMessage() {
     },
     {
       onDelta: (_, full) => {
+        if (!typingRemoved) {
+          renderer.removeTypingIndicator(loadingId)
+          typingRemoved = true
+        }
         if (meta) meta.remove()
         fullResponse = full
         contentDiv.textContent = fullResponse
@@ -425,7 +322,7 @@ async function sendMessage() {
       },
       onComplete: (full) => {
         if (meta) meta.remove()
-        contentDiv.innerHTML = renderRichText(full)
+        contentDiv.innerHTML = renderer.renderRichText(full)
         if (meta) contentDiv.appendChild(meta)
         conversationHistory.push({ role: 'assistant', content: full })
         setStatus('● 在线', 'rgba(34, 197, 94, 0.85)')
@@ -441,7 +338,7 @@ async function sendMessage() {
           abortController = null
           return
         }
-        addMessage('assistant', '抱歉，发生了错误：' + error.message, { time: formatTime() })
+        renderer.addMessage('assistant', '抱歉，发生了错误：' + error.message, { time: formatTime() })
         setStatus('● 异常', 'rgba(239, 68, 68, 0.85)')
         sendButton.disabled = false
         abortController = null
@@ -450,6 +347,5 @@ async function sendMessage() {
       }
     }
   )
-  removeTypingIndicator(loadingId)
   abortController = { abort: () => stream.abort() }
 }
