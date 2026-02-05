@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>AI Chat</title>
+    <link
+      rel="stylesheet"
+      href="/ui/style.css"
+    />
+  </head>
+  <body>
+    <div class="chat-shell">
+      <div class="chat-container">
+        <div class="chat-header">
+          <div class="header-left">
+            <div class="brand">
+              <div class="brand-dot"></div>
+              <div class="brand-text">
+                <h1>AgenticHub</h1>
+              </div>
+            </div>
+          </div>
+
+          <div class="header-right">
+            <button
+              class="icon-btn"
+              id="clearButton"
+              title="清空对话"
+              aria-label="清空对话"
+            >
+              <!-- trash icon -->
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M9 3h6m-9 4h12m-10 0 1 16h6l1-16M10 7v14m4-14v14"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="chat-messages"
+          id="chatMessages"
+        >
+          <div class="welcome-message">
+            <div class="welcome-card">
+              <div class="welcome-title">你好！</div>
+              <div class="welcome-text">
+                有什么可以帮助你的吗？你也可以试试发一段代码或需求。
+              </div>
+              <div
+                class="welcome-chips"
+                id="quickChips"
+              >
+                <button
+                  class="chip"
+                  data-text="你好，我想开始一段对话"
+                >
+                  开始对话
+                </button>
+                <button
+                  class="chip"
+                  data-text="我需要一些帮助和建议"
+                >
+                  寻求帮助
+                </button>
+                <button
+                  class="chip"
+                  data-text="请介绍一下你能帮我做什么"
+                >
+                  探索功能
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-input-area">
+          <div class="input-wrap">
+            <textarea
+              id="chatInput"
+              placeholder="输入你的消息…（Enter 发送，Shift+Enter 换行）"
+              rows="1"
+            ></textarea>
+            <div class="input-actions">
+              <button
+                class="icon-btn"
+                id="scrollToBottom"
+                title="回到底部"
+                aria-label="回到底部"
+              >
+                <!-- down icon -->
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M12 5v12m0 0 5-5m-5 5-5-5"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+              <button
+                class="icon-btn"
+                id="uploadButton"
+                title="上传图片"
+                aria-label="上传图片"
+              >
+                <!-- upload/image icon -->
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <polyline
+                    points="17 8 12 3 7 8"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <line
+                    x1="12"
+                    y1="3"
+                    x2="12"
+                    y2="15"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </button>
+              <input
+                type="file"
+                id="fileInput"
+                accept="image/*"
+                style="display: none"
+              />
+              <button
+                id="sendButton"
+                class="send-btn"
+              >
+                <span class="send-text">发送</span>
+                <!-- send icon -->
+                <svg
+                  class="send-icon"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M22 2 11 13"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M22 2 15 22l-4-9-9-4 20-7Z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="helper-row">
+            <span class="hint">Enter 发送 · Shift+Enter 换行</span>
+            <span
+              class="status"
+              id="connStatus"
+              >● 在线</span
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/ui/sdk.js"></script>
+    <script src="/ui/app.js"></script>
+
+    <!-- 可选：一些轻量 UI 行为（不影响你现有 app.js 的消息逻辑） -->
+    <script>
+      // 回到底部
+      const scrollBtn = document.getElementById('scrollToBottom')
+      if (scrollBtn && chatMessages) {
+        const scrollToBottom = () =>
+          (chatMessages.scrollTop = chatMessages.scrollHeight)
+        scrollBtn.addEventListener('click', scrollToBottom)
+        // 当用户不在底部时显示按钮
+        const toggle = () => {
+          const nearBottom =
+            chatMessages.scrollHeight -
+              chatMessages.scrollTop -
+              chatMessages.clientHeight <
+            80
+          scrollBtn.style.opacity = nearBottom ? '0' : '1'
+          scrollBtn.style.pointerEvents = nearBottom ? 'none' : 'auto'
+        }
+        chatMessages.addEventListener('scroll', toggle)
+        setTimeout(toggle, 300)
+      }
+
+      // 清空对话（仅清空 UI；如你有后端历史，请按需改）
+      if (clearButton && chatMessages) {
+        clearButton.addEventListener('click', () => {
+          const keep = chatMessages.querySelector('.welcome-message')
+          chatMessages.innerHTML = ''
+          if (keep) chatMessages.appendChild(keep)
+        })
+      }
+    </script>
+  </body>
+</html>
