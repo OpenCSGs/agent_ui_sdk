@@ -24,6 +24,7 @@
       const usedSignal = signal || controller.signal
       const headers = Object.assign({ 'Content-Type': 'application/json' }, this.headers)
       let full = ''
+      let buffer = ''
       const done = (async () => {
         try {
           const res = await fetch(this.baseUrl + this.chatPath, {
@@ -40,9 +41,80 @@
             const { done, value } = await reader.read()
             if (done) break
             const chunk = decoder.decode(value, { stream: true })
-            full += chunk
-            if (onDelta) onDelta(chunk, full)
+            buffer += chunk
+            
+            // 按行分割并解析 JSON
+            const lines = buffer.split('\n')
+            buffer = lines.pop() // 保留最后一行，可能不完整
+            
+            for (const line of lines) {
+              if (line.trim() === '') continue
+              try {
+                const data = JSON.parse(line)
+                let displayText = ''
+                
+                // 根据 type 处理不同类型的消息
+                switch (data.type) {
+                  case 'content':
+                    displayText = data.content
+                    break
+                  case 'tool_call':
+                    displayText = `[工具调用] ${data.content}`
+                    break
+                  case 'tool_progress':
+                    displayText = `[工具进度] ${data.content}`
+                    break
+                  case 'tool_output':
+                    displayText = `[工具输出] ${data.content}`
+                    break
+                  case 'error':
+                    displayText = `[错误] ${data.content}`
+                    break
+                  default:
+                    displayText = `[未知类型] ${data.content}`
+                }
+                
+                full += displayText
+                if (onDelta) onDelta(displayText, full)
+              } catch (e) {
+                console.error('解析 JSON 失败:', e, line)
+              }
+            }
           }
+          
+          // 处理最后一行
+          if (buffer.trim() !== '') {
+            try {
+              const data = JSON.parse(buffer)
+              let displayText = ''
+              
+              switch (data.type) {
+                case 'content':
+                  displayText = data.content
+                  break
+                case 'tool_call':
+                  displayText = `[工具调用] ${data.content}`
+                  break
+                case 'tool_progress':
+                  displayText = `[工具进度] ${data.content}`
+                  break
+                case 'tool_output':
+                  displayText = `[工具输出] ${data.content}`
+                  break
+                case 'error':
+                  displayText = `[错误] ${data.content}`
+                  break
+                default:
+                  displayText = `[未知类型] ${data.content}`
+              }
+              
+              full += displayText
+              if (onDelta) onDelta(displayText, full)
+            } catch (e) {
+              console.error('解析最后一行 JSON 失败:', e, buffer)
+            }
+          }
+          
           if (onComplete) onComplete(full)
         } catch (e) {
           if (onError) onError(e)
